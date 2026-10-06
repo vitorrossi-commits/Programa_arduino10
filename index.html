@@ -1,0 +1,2195 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>IoT Control Center</title>
+
+    <!-- =====================================================
+         PAHO MQTT
+         ===================================================== -->
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+
+
+    <style>
+
+        /* =====================================================
+           RESET
+           ===================================================== */
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+
+        /* =====================================================
+           BODY
+           ===================================================== */
+
+        body {
+
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
+            min-height: 100vh;
+
+            background:
+                radial-gradient(
+                    circle at top left,
+                    #263b5a 0%,
+                    transparent 35%
+                ),
+
+                radial-gradient(
+                    circle at bottom right,
+                    #18233b 0%,
+                    transparent 40%
+                ),
+
+                #0b1220;
+
+            color: #f1f5f9;
+
+            padding: 25px;
+
+        }
+
+
+        /* =====================================================
+           CONTAINER
+           ===================================================== */
+
+        .container {
+
+            width: 100%;
+
+            max-width: 1100px;
+
+            margin: auto;
+
+        }
+
+
+        /* =====================================================
+           HEADER
+           ===================================================== */
+
+        header {
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+            gap: 20px;
+
+            margin-bottom: 25px;
+
+        }
+
+
+        .logo-area h1 {
+
+            font-size: 29px;
+
+            color: #ffffff;
+
+            margin-bottom: 6px;
+
+        }
+
+
+        .logo-area p {
+
+            color: #94a3b8;
+
+            font-size: 14px;
+
+        }
+
+
+        /* =====================================================
+           STATUS
+           ===================================================== */
+
+        .connection {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 10px;
+
+            background:
+                rgba(255,255,255,0.06);
+
+            border:
+                1px solid
+                rgba(255,255,255,0.10);
+
+            padding: 10px 15px;
+
+            border-radius: 12px;
+
+        }
+
+
+        .status-dot {
+
+            width: 10px;
+
+            height: 10px;
+
+            border-radius: 50%;
+
+            background: #ef4444;
+
+        }
+
+
+        .status-dot.connected {
+
+            background: #22c55e;
+
+            box-shadow:
+                0 0 10px
+                rgba(34,197,94,.8);
+
+        }
+
+
+        .status-text {
+
+            font-size: 13px;
+
+            color: #cbd5e1;
+
+        }
+
+
+        /* =====================================================
+           CARD
+           ===================================================== */
+
+        .card {
+
+            background:
+                rgba(15,23,42,0.82);
+
+            border:
+                1px solid
+                rgba(148,163,184,0.14);
+
+            border-radius: 20px;
+
+            padding: 25px;
+
+            box-shadow:
+                0 20px 60px
+                rgba(0,0,0,.25);
+
+            backdrop-filter: blur(14px);
+
+            margin-bottom: 20px;
+
+        }
+
+
+        .card-title {
+
+            font-size: 18px;
+
+            margin-bottom: 18px;
+
+            color: #f8fafc;
+
+        }
+
+
+        /* =====================================================
+           MQTT CONFIGURATION
+           ===================================================== */
+
+        .connection-grid {
+
+            display: grid;
+
+            grid-template-columns:
+                1fr 1fr;
+
+            gap: 15px;
+
+        }
+
+
+        .field {
+
+            display: flex;
+
+            flex-direction: column;
+
+            gap: 7px;
+
+        }
+
+
+        .field label {
+
+            font-size: 12px;
+
+            color: #94a3b8;
+
+        }
+
+
+        .field input {
+
+            width: 100%;
+
+            padding: 13px 14px;
+
+            border-radius: 10px;
+
+            border:
+                1px solid
+                #334155;
+
+            background: #0f172a;
+
+            color: white;
+
+            outline: none;
+
+            font-size: 14px;
+
+        }
+
+
+        .field input:focus {
+
+            border-color: #38bdf8;
+
+        }
+
+
+        /* =====================================================
+           BUTTONS
+           ===================================================== */
+
+        .buttons {
+
+            display: flex;
+
+            gap: 10px;
+
+            margin-top: 18px;
+
+            flex-wrap: wrap;
+
+        }
+
+
+        button {
+
+            border: none;
+
+            cursor: pointer;
+
+            padding: 12px 18px;
+
+            border-radius: 10px;
+
+            font-weight: bold;
+
+            transition: .2s;
+
+        }
+
+
+        button:hover {
+
+            transform: translateY(-1px);
+
+        }
+
+
+        button:active {
+
+            transform: translateY(0);
+
+        }
+
+
+        .btn-connect {
+
+            background: #0ea5e9;
+
+            color: white;
+
+        }
+
+
+        .btn-connect:hover {
+
+            background: #0284c7;
+
+        }
+
+
+        .btn-disconnect {
+
+            background: #334155;
+
+            color: white;
+
+        }
+
+
+        /* =====================================================
+           DASHBOARD
+           ===================================================== */
+
+        .dashboard {
+
+            display: grid;
+
+            grid-template-columns:
+                1.2fr
+                .8fr;
+
+            gap: 20px;
+
+        }
+
+
+        /* =====================================================
+           LED CARD
+           ===================================================== */
+
+        .led-card {
+
+            min-height: 420px;
+
+            display: flex;
+
+            flex-direction: column;
+
+            justify-content: space-between;
+
+        }
+
+
+        .led-header {
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+        }
+
+
+        .led-name {
+
+            font-size: 22px;
+
+            font-weight: bold;
+
+        }
+
+
+        .led-state {
+
+            font-size: 12px;
+
+            padding: 7px 11px;
+
+            border-radius: 20px;
+
+            background: #1e293b;
+
+            color: #94a3b8;
+
+        }
+
+
+        .led-state.on {
+
+            background:
+                rgba(34,197,94,.12);
+
+            color: #4ade80;
+
+        }
+
+
+        /* =====================================================
+           LED DISPLAY
+           ===================================================== */
+
+        .led-display {
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+
+            padding: 25px 0;
+
+        }
+
+
+        .led-circle {
+
+            width: 150px;
+
+            height: 150px;
+
+            border-radius: 50%;
+
+            background: #111827;
+
+            border:
+                8px solid
+                #1f2937;
+
+            box-shadow:
+                inset 0 0 30px
+                rgba(0,0,0,.7);
+
+            transition: .3s;
+
+        }
+
+
+        .led-circle.on {
+
+            background: #f8fafc;
+
+            border-color: #38bdf8;
+
+            box-shadow:
+
+                0 0 25px
+                rgba(56,189,248,.8),
+
+                0 0 70px
+                rgba(56,189,248,.5);
+
+        }
+
+
+        /* =====================================================
+           BRIGHTNESS
+           ===================================================== */
+
+        .brightness {
+
+            margin-top: 10px;
+
+        }
+
+
+        .brightness-top {
+
+            display: flex;
+
+            justify-content: space-between;
+
+            margin-bottom: 10px;
+
+        }
+
+
+        .brightness-value {
+
+            color: #38bdf8;
+
+            font-size: 20px;
+
+            font-weight: bold;
+
+        }
+
+
+        input[type="range"] {
+
+            width: 100%;
+
+            accent-color: #0ea5e9;
+
+            cursor: pointer;
+
+        }
+
+
+        /* =====================================================
+           LED BUTTONS
+           ===================================================== */
+
+        .control-buttons {
+
+            display: grid;
+
+            grid-template-columns:
+                1fr 1fr;
+
+            gap: 10px;
+
+            margin-top: 18px;
+
+        }
+
+
+        .btn-on {
+
+            background: #16a34a;
+
+            color: white;
+
+        }
+
+
+        .btn-on:hover {
+
+            background: #15803d;
+
+        }
+
+
+        .btn-off {
+
+            background: #dc2626;
+
+            color: white;
+
+        }
+
+
+        .btn-off:hover {
+
+            background: #b91c1c;
+
+        }
+
+
+        /* =====================================================
+           SENSOR
+           ===================================================== */
+
+        .sensor-card {
+
+            display: flex;
+
+            flex-direction: column;
+
+            justify-content: space-between;
+
+        }
+
+
+        .sensor-value {
+
+            display: flex;
+
+            flex-direction: column;
+
+            justify-content: center;
+
+            align-items: center;
+
+            min-height: 250px;
+
+        }
+
+
+        .sensor-number {
+
+            font-size: 58px;
+
+            font-weight: bold;
+
+            color: #38bdf8;
+
+        }
+
+
+        .sensor-unit {
+
+            color: #94a3b8;
+
+            margin-top: 5px;
+
+        }
+
+
+        .sensor-status {
+
+            padding-top: 20px;
+
+            border-top:
+                1px solid
+                #1e293b;
+
+            color: #94a3b8;
+
+            font-size: 13px;
+
+        }
+
+
+        /* =====================================================
+           LOG
+           ===================================================== */
+
+        .log {
+
+            margin-top: 20px;
+
+        }
+
+
+        .log-box {
+
+            height: 180px;
+
+            overflow-y: auto;
+
+            background: #020617;
+
+            border-radius: 10px;
+
+            padding: 12px;
+
+            font-family: monospace;
+
+            font-size: 12px;
+
+            color: #94a3b8;
+
+        }
+
+
+        .log-line {
+
+            margin-bottom: 6px;
+
+        }
+
+
+        .success {
+
+            color: #4ade80;
+
+        }
+
+
+        .error {
+
+            color: #f87171;
+
+        }
+
+
+        .info {
+
+            color: #38bdf8;
+
+        }
+
+
+        /* =====================================================
+           FOOTER
+           ===================================================== */
+
+        footer {
+
+            text-align: center;
+
+            margin-top: 25px;
+
+            color: #64748b;
+
+            font-size: 12px;
+
+        }
+
+
+        /* =====================================================
+           RESPONSIVE
+           ===================================================== */
+
+        @media (max-width: 800px) {
+
+            body {
+
+                padding: 15px;
+
+            }
+
+
+            header {
+
+                flex-direction: column;
+
+                align-items: flex-start;
+
+            }
+
+
+            .connection-grid {
+
+                grid-template-columns: 1fr;
+
+            }
+
+
+            .dashboard {
+
+                grid-template-columns: 1fr;
+
+            }
+
+
+            .led-card {
+
+                min-height: auto;
+
+            }
+
+        }
+
+
+        @media (max-width: 450px) {
+
+            .card {
+
+                padding: 18px;
+
+                border-radius: 16px;
+
+            }
+
+
+            .logo-area h1 {
+
+                font-size: 23px;
+
+            }
+
+
+            .sensor-number {
+
+                font-size: 45px;
+
+            }
+
+
+            .led-circle {
+
+                width: 125px;
+
+                height: 125px;
+
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="container">
+
+
+    <!-- =====================================================
+         HEADER
+         ===================================================== -->
+
+    <header>
+
+        <div class="logo-area">
+
+            <h1>
+                IoT Control Center
+            </h1>
+
+            <p>
+                Controle remoto Arduino via MQTT
+            </p>
+
+        </div>
+
+
+        <div class="connection">
+
+            <div
+                id="statusDot"
+                class="status-dot"
+            ></div>
+
+
+            <span
+                id="statusText"
+                class="status-text"
+            >
+                Desconectado
+            </span>
+
+        </div>
+
+    </header>
+
+
+
+    <!-- =====================================================
+         CONFIGURAÇÃO MQTT
+         ===================================================== -->
+
+    <div class="card">
+
+        <div class="card-title">
+
+            Configuração MQTT
+
+        </div>
+
+
+        <div class="connection-grid">
+
+
+            <div class="field">
+
+                <label>
+                    Broker
+                </label>
+
+
+                <input
+                    id="broker"
+                    type="text"
+                    value="broker.hivemq.com"
+                    readonly
+                >
+
+            </div>
+
+
+
+            <div class="field">
+
+                <label>
+                    Porta WebSocket
+                </label>
+
+
+                <input
+                    id="port"
+                    type="text"
+                    value="8884"
+                    readonly
+                >
+
+            </div>
+
+
+
+            <div
+                class="field"
+                style="grid-column: 1 / -1;"
+            >
+
+                <label>
+                    Tópico MQTT
+                </label>
+
+
+                <input
+                    id="topic"
+                    type="text"
+                    value="vitor/iot/arduino"
+                    placeholder="Digite o tópico"
+                >
+
+            </div>
+
+
+        </div>
+
+
+
+        <div class="buttons">
+
+            <button
+                class="btn-connect"
+                onclick="conectarMQTT()"
+            >
+
+                Conectar
+
+            </button>
+
+
+            <button
+                class="btn-disconnect"
+                onclick="desconectarMQTT()"
+            >
+
+                Desconectar
+
+            </button>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- =====================================================
+         DASHBOARD
+         ===================================================== -->
+
+    <div class="dashboard">
+
+
+        <!-- =================================================
+             LED
+             ================================================= -->
+
+        <div class="card led-card">
+
+
+            <div>
+
+
+                <div class="led-header">
+
+                    <div class="led-name">
+
+                        LED PWM
+
+                    </div>
+
+
+                    <div
+                        id="ledState"
+                        class="led-state"
+                    >
+
+                        DESLIGADO
+
+                    </div>
+
+                </div>
+
+
+
+                <div class="led-display">
+
+                    <div
+                        id="ledCircle"
+                        class="led-circle"
+                    ></div>
+
+                </div>
+
+
+
+                <div class="brightness">
+
+
+                    <div class="brightness-top">
+
+                        <span>
+                            Intensidade
+                        </span>
+
+
+                        <span
+                            id="brightnessValue"
+                            class="brightness-value"
+                        >
+
+                            0%
+
+                        </span>
+
+                    </div>
+
+
+
+                    <input
+                        id="brightnessSlider"
+                        type="range"
+                        min="0"
+                        max="100"
+                        value="0"
+                    >
+
+                </div>
+
+
+            </div>
+
+
+
+            <div class="control-buttons">
+
+
+                <button
+                    class="btn-on"
+                    onclick="ligarLED()"
+                >
+
+                    LIGAR
+
+                </button>
+
+
+                <button
+                    class="btn-off"
+                    onclick="desligarLED()"
+                >
+
+                    DESLIGAR
+
+                </button>
+
+
+            </div>
+
+
+        </div>
+
+
+
+        <!-- =================================================
+             SENSOR
+             ================================================= -->
+
+        <div class="card sensor-card">
+
+
+            <div class="card-title">
+
+                Sensor Analógico
+
+            </div>
+
+
+
+            <div class="sensor-value">
+
+
+                <div
+                    id="sensorValue"
+                    class="sensor-number"
+                >
+
+                    ---
+
+                </div>
+
+
+                <div class="sensor-unit">
+
+                    leitura A0
+
+                </div>
+
+
+            </div>
+
+
+
+            <div class="sensor-status">
+
+                Última atualização:
+
+                <span id="sensorTime">
+
+                    aguardando dados
+
+                </span>
+
+            </div>
+
+
+        </div>
+
+
+    </div>
+
+
+
+    <!-- =====================================================
+         LOG
+         ===================================================== -->
+
+    <div class="card log">
+
+
+        <div class="card-title">
+
+            Monitor MQTT
+
+        </div>
+
+
+        <div
+            id="logBox"
+            class="log-box"
+        ></div>
+
+
+    </div>
+
+
+
+    <footer>
+
+        IoT Control Center
+        •
+        Arduino + Python + MQTT
+
+    </footer>
+
+
+</div>
+
+
+
+<script>
+
+
+    /* ========================================================
+       CONFIGURAÇÃO MQTT
+       ======================================================== */
+
+    const MQTT_HOST =
+        "broker.hivemq.com";
+
+
+    const MQTT_PORT =
+        8884;
+
+
+    let TOPICO =
+        "vitor/iot/arduino";
+
+
+    let cliente =
+        null;
+
+
+    let conectado =
+        false;
+
+
+
+    /* ========================================================
+       ELEMENTOS HTML
+       ======================================================== */
+
+    const statusDot =
+        document.getElementById(
+            "statusDot"
+        );
+
+
+    const statusText =
+        document.getElementById(
+            "statusText"
+        );
+
+
+    const ledCircle =
+        document.getElementById(
+            "ledCircle"
+        );
+
+
+    const ledState =
+        document.getElementById(
+            "ledState"
+        );
+
+
+    const brightnessSlider =
+        document.getElementById(
+            "brightnessSlider"
+        );
+
+
+    const brightnessValue =
+        document.getElementById(
+            "brightnessValue"
+        );
+
+
+    const sensorValue =
+        document.getElementById(
+            "sensorValue"
+        );
+
+
+    const sensorTime =
+        document.getElementById(
+            "sensorTime"
+        );
+
+
+    const logBox =
+        document.getElementById(
+            "logBox"
+        );
+
+
+
+    /* ========================================================
+       LOG
+       ======================================================== */
+
+    function adicionarLog(
+        mensagem,
+        tipo = "info"
+    ) {
+
+
+        const linha =
+            document.createElement(
+                "div"
+            );
+
+
+        linha.className =
+            "log-line " + tipo;
+
+
+        const hora =
+            new Date()
+                .toLocaleTimeString();
+
+
+        linha.textContent =
+            "[" +
+            hora +
+            "] " +
+            mensagem;
+
+
+        logBox.appendChild(
+            linha
+        );
+
+
+        logBox.scrollTop =
+            logBox.scrollHeight;
+
+    }
+
+
+
+    /* ========================================================
+       STATUS
+       ======================================================== */
+
+    function atualizarStatus(
+        estado
+    ) {
+
+
+        conectado =
+            estado;
+
+
+        if (estado) {
+
+
+            statusDot.classList.add(
+                "connected"
+            );
+
+
+            statusText.textContent =
+                "Conectado ao MQTT";
+
+
+        } else {
+
+
+            statusDot.classList.remove(
+                "connected"
+            );
+
+
+            statusText.textContent =
+                "Desconectado";
+
+        }
+
+    }
+
+
+
+    /* ========================================================
+       CONECTAR
+       ======================================================== */
+
+    function conectarMQTT() {
+
+
+        if (conectado) {
+
+            adicionarLog(
+                "O site já está conectado.",
+                "info"
+            );
+
+            return;
+
+        }
+
+
+        TOPICO =
+            document
+                .getElementById("topic")
+                .value
+                .trim();
+
+
+        if (TOPICO === "") {
+
+
+            adicionarLog(
+                "Digite um tópico MQTT.",
+                "error"
+            );
+
+
+            return;
+
+        }
+
+
+
+        const clientId =
+
+            "site_arduino_" +
+
+            Math.random()
+                .toString(16)
+                .substring(2, 10);
+
+
+
+        adicionarLog(
+            "Iniciando conexão MQTT...",
+            "info"
+        );
+
+
+        adicionarLog(
+            "Broker: " +
+            MQTT_HOST,
+            "info"
+        );
+
+
+        adicionarLog(
+            "Porta: " +
+            MQTT_PORT,
+            "info"
+        );
+
+
+        adicionarLog(
+            "Tópico: " +
+            TOPICO,
+            "info"
+        );
+
+
+
+        try {
+
+
+            cliente =
+                new Paho.MQTT.Client(
+
+                    MQTT_HOST,
+
+                    MQTT_PORT,
+
+                    "/mqtt",
+
+                    clientId
+
+                );
+
+
+
+            cliente.onConnectionLost =
+                quandoPerderConexao;
+
+
+            cliente.onMessageArrived =
+                quandoReceberMensagem;
+
+
+
+            const opcoes = {
+
+
+                timeout: 10,
+
+
+                useSSL: true,
+
+
+                cleanSession: true,
+
+
+                onSuccess:
+                    quandoConectado,
+
+
+                onFailure:
+                    quandoFalhar
+
+            };
+
+
+
+            adicionarLog(
+                "Tentando conectar...",
+                "info"
+            );
+
+
+            cliente.connect(
+                opcoes
+            );
+
+
+        }
+
+        catch (erro) {
+
+
+            atualizarStatus(
+                false
+            );
+
+
+            adicionarLog(
+                "Erro ao criar cliente MQTT.",
+                "error"
+            );
+
+
+            adicionarLog(
+                String(erro),
+                "error"
+            );
+
+        }
+
+    }
+
+
+
+    /* ========================================================
+       CONECTADO
+       ======================================================== */
+
+    function quandoConectado() {
+
+
+        atualizarStatus(
+            true
+        );
+
+
+        adicionarLog(
+            "CONECTADO AO HIVEMQ!",
+            "success"
+        );
+
+
+
+        try {
+
+
+            cliente.subscribe(
+                TOPICO
+            );
+
+
+            adicionarLog(
+                "Inscrito no tópico: " +
+                TOPICO,
+                "success"
+            );
+
+
+        }
+
+        catch (erro) {
+
+
+            adicionarLog(
+                "Erro ao assinar tópico.",
+                "error"
+            );
+
+
+            adicionarLog(
+                String(erro),
+                "error"
+            );
+
+        }
+
+    }
+
+
+
+    /* ========================================================
+       FALHA
+       ======================================================== */
+
+    function quandoFalhar(
+        erro
+    ) {
+
+
+        atualizarStatus(
+            false
+        );
+
+
+        adicionarLog(
+            "FALHA NA CONEXÃO MQTT.",
+            "error"
+        );
+
+
+        if (
+            erro &&
+            erro.errorMessage
+        ) {
+
+
+            adicionarLog(
+                erro.errorMessage,
+                "error"
+            );
+
+        }
+
+
+        adicionarLog(
+            "Verifique o broker, porta e conexão com a internet.",
+            "error"
+        );
+
+    }
+
+
+
+    /* ========================================================
+       PERDEU CONEXÃO
+       ======================================================== */
+
+    function quandoPerderConexao(
+        resposta
+    ) {
+
+
+        atualizarStatus(
+            false
+        );
+
+
+        adicionarLog(
+            "Conexão MQTT perdida.",
+            "error"
+        );
+
+
+        if (
+            resposta &&
+            resposta.errorMessage
+        ) {
+
+
+            adicionarLog(
+                resposta.errorMessage,
+                "error"
+            );
+
+        }
+
+    }
+
+
+
+    /* ========================================================
+       DESCONECTAR
+       ======================================================== */
+
+    function desconectarMQTT() {
+
+
+        if (
+            cliente &&
+            conectado
+        ) {
+
+
+            try {
+
+
+                cliente.disconnect();
+
+
+                adicionarLog(
+                    "Desconectado pelo usuário.",
+                    "info"
+                );
+
+
+            }
+
+            catch (erro) {
+
+
+                adicionarLog(
+                    "Erro ao desconectar.",
+                    "error"
+                );
+
+            }
+
+        }
+
+
+        atualizarStatus(
+            false
+        );
+
+    }
+
+
+
+    /* ========================================================
+       RECEBER MENSAGEM MQTT
+       ======================================================== */
+
+    function quandoReceberMensagem(
+        message
+    ) {
+
+
+        const mensagem =
+            message.payloadString
+                .trim();
+
+
+        adicionarLog(
+            "MQTT → SITE: " +
+            mensagem,
+            "info"
+        );
+
+
+
+        /* -----------------------------------------------
+           SENSOR
+           ----------------------------------------------- */
+
+        if (
+            mensagem.startsWith(
+                "SENSOR:"
+            )
+        ) {
+
+
+            const valor =
+                mensagem
+                    .substring(7)
+                    .trim();
+
+
+            sensorValue.textContent =
+                valor;
+
+
+            sensorTime.textContent =
+                new Date()
+                    .toLocaleTimeString();
+
+
+            return;
+
+        }
+
+
+
+        /* -----------------------------------------------
+           BRILHO
+           ----------------------------------------------- */
+
+        if (
+            mensagem.startsWith(
+                "BRILHO:"
+            )
+        ) {
+
+
+            const valor =
+                parseInt(
+
+                    mensagem
+                        .substring(7)
+                        .trim()
+
+                );
+
+
+            if (
+                !isNaN(valor)
+            ) {
+
+
+                atualizarLED(
+                    valor
+                );
+
+            }
+
+
+            return;
+
+        }
+
+
+
+        /* -----------------------------------------------
+           NÚMERO DIRETO
+           ----------------------------------------------- */
+
+        const valor =
+            parseInt(
+                mensagem
+            );
+
+
+        if (
+            !isNaN(valor)
+        ) {
+
+
+            atualizarLED(
+                valor
+            );
+
+        }
+
+    }
+
+
+
+    /* ========================================================
+       PUBLICAR MQTT
+       ======================================================== */
+
+    function publicar(
+        valor
+    ) {
+
+
+        if (
+            !cliente ||
+            !conectado
+        ) {
+
+
+            adicionarLog(
+                "Não é possível enviar.",
+                "error"
+            );
+
+
+            adicionarLog(
+                "O site não está conectado ao MQTT.",
+                "error"
+            );
+
+
+            return false;
+
+        }
+
+
+
+        try {
+
+
+            const mensagem =
+                new Paho.MQTT.Message(
+                    String(valor)
+                );
+
+
+            mensagem.destinationName =
+                TOPICO;
+
+
+            cliente.send(
+                mensagem
+            );
+
+
+            adicionarLog(
+                "SITE → MQTT: " +
+                valor,
+                "success"
+            );
+
+
+            return true;
+
+        }
+
+        catch (erro) {
+
+
+            adicionarLog(
+                "Erro ao publicar.",
+                "error"
+            );
+
+
+            adicionarLog(
+                String(erro),
+                "error"
+            );
+
+
+            return false;
+
+        }
+
+    }
+
+
+
+    /* ========================================================
+       SLIDER
+       ======================================================== */
+
+    brightnessSlider.addEventListener(
+
+        "input",
+
+        function() {
+
+
+            const valor =
+                this.value;
+
+
+            brightnessValue.textContent =
+                valor + "%";
+
+
+            atualizarLEDVisual(
+                valor
+            );
+
+        }
+
+    );
+
+
+
+    /* ========================================================
+       ENVIA SLIDER
+       ======================================================== */
+
+    brightnessSlider.addEventListener(
+
+        "change",
+
+        function() {
+
+
+            const valor =
+                this.value;
+
+
+            publicar(
+                valor
+            );
+
+        }
+
+    );
+
+
+
+    /* ========================================================
+       LIGAR LED
+       ======================================================== */
+
+    function ligarLED() {
+
+
+        let valor =
+            parseInt(
+                brightnessSlider.value
+            );
+
+
+        if (
+            valor <= 0
+        ) {
+
+
+            valor = 100;
+
+
+            brightnessSlider.value =
+                100;
+
+
+            brightnessValue.textContent =
+                "100%";
+
+        }
+
+
+        atualizarLED(
+            valor
+        );
+
+
+        publicar(
+            valor
+        );
+
+    }
+
+
+
+    /* ========================================================
+       DESLIGAR LED
+       ======================================================== */
+
+    function desligarLED() {
+
+
+        brightnessSlider.value =
+            0;
+
+
+        brightnessValue.textContent =
+            "0%";
+
+
+        atualizarLED(
+            0
+        );
+
+
+        publicar(
+            0
+        );
+
+    }
+
+
+
+    /* ========================================================
+       ATUALIZAR LED
+       ======================================================== */
+
+    function atualizarLED(
+        valor
+    ) {
+
+
+        valor =
+            parseInt(valor);
+
+
+        if (
+            isNaN(valor)
+        ) {
+
+            valor = 0;
+
+        }
+
+
+        valor =
+            Math.max(
+                0,
+                Math.min(
+                    100,
+                    valor
+                )
+            );
+
+
+        brightnessSlider.value =
+            valor;
+
+
+        brightnessValue.textContent =
+            valor + "%";
+
+
+        atualizarLEDVisual(
+            valor
+        );
+
+    }
+
+
+
+    /* ========================================================
+       ATUALIZAR VISUAL LED
+       ======================================================== */
+
+    function atualizarLEDVisual(
+        valor
+    ) {
+
+
+        valor =
+            parseInt(valor);
+
+
+        if (
+            isNaN(valor)
+        ) {
+
+            valor = 0;
+
+        }
+
+
+
+        if (
+            valor > 0
+        ) {
+
+
+            ledCircle.classList.add(
+                "on"
+            );
+
+
+            ledState.classList.add(
+                "on"
+            );
+
+
+            ledState.textContent =
+                "LIGADO";
+
+
+        } else {
+
+
+            ledCircle.classList.remove(
+                "on"
+            );
+
+
+            ledState.classList.remove(
+                "on"
+            );
+
+
+            ledState.textContent =
+                "DESLIGADO";
+
+        }
+
+    }
+
+
+
+    /* ========================================================
+       INICIALIZAÇÃO
+       ======================================================== */
+
+    atualizarStatus(
+        false
+    );
+
+
+    atualizarLED(
+        0
+    );
+
+
+    adicionarLog(
+        "Sistema carregado.",
+        "success"
+    );
+
+
+    adicionarLog(
+        "Broker: broker.hivemq.com",
+        "info"
+    );
+
+
+    adicionarLog(
+        "WebSocket: 8884",
+        "info"
+    );
+
+
+    adicionarLog(
+        "Tópico: vitor/iot/arduino",
+        "info"
+    );
+
+
+    adicionarLog(
+        "Clique em CONECTAR.",
+        "info"
+    );
+
+
+</script>
+
+
+</body>
+
+</html>
